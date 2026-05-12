@@ -377,7 +377,7 @@ async function generateImage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: [{ parts: [{ text: "Generate an image: " + getEditedPrompt() }] }],
-        generationConfig: { responseModalities: ["IMAGE", "TEXT"], imageSizeOptions: { aspectRatio: "1:1" } }
+        generationConfig: { responseModalities: ["IMAGE", "TEXT"] }
       })
     });
     if (!resp.ok) throw new Error("API error: " + resp.status);
