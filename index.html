@@ -481,7 +481,7 @@ async function restoreHistory(i) {
   }
 }
 
-function clearHistory() { history = []; saveHistory(); renderHistory(); clearImages().catch(() => {}); }
+function clearHistory() { if (!confirm("Clear all history and saved images?")) return; history = []; saveHistory(); renderHistory(); clearImages().catch(() => {}); }
 
 function togglePanel(name) {
   const body = document.getElementById(name + "Body");
