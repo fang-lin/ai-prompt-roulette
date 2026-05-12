@@ -273,6 +273,45 @@ function loadHistory() {
 }
 function saveHistory() { localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(history)); }
 
+// === IndexedDB for images ===
+let imgDB = null;
+function openImgDB() {
+  return new Promise((resolve, reject) => {
+    if (imgDB) { resolve(imgDB); return; }
+    const req = indexedDB.open("apr_images", 1);
+    req.onupgradeneeded = () => { req.result.createObjectStore("images"); };
+    req.onsuccess = () => { imgDB = req.result; resolve(imgDB); };
+    req.onerror = () => reject(req.error);
+  });
+}
+async function saveImage(id, dataUrl) {
+  const db = await openImgDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("images", "readwrite");
+    tx.objectStore("images").put(dataUrl, id);
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function loadImage(id) {
+  const db = await openImgDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("images", "readonly");
+    const req = tx.objectStore("images").get(id);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function clearImages() {
+  const db = await openImgDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("images", "readwrite");
+    tx.objectStore("images").clear();
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
 function randItem(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
 function displayText(col, item) { return col === 0 ? item.display : item; }
@@ -385,9 +424,16 @@ async function generateImage() {
     const parts = data.candidates?.[0]?.content?.parts || [];
     const imgPart = parts.find(p => p.inlineData);
     if (!imgPart) throw new Error("No image returned");
-    img.src = "data:" + imgPart.inlineData.mimeType + ";base64," + imgPart.inlineData.data;
+    const dataUrl = "data:" + imgPart.inlineData.mimeType + ";base64," + imgPart.inlineData.data;
+    img.src = dataUrl;
     loading.style.display = "none";
     img.style.display = "";
+    if (history.length > 0) {
+      history[0].hasImage = true;
+      saveHistory();
+      saveImage(history[0].id, dataUrl).catch(() => {});
+      renderHistory();
+    }
   } catch (e) {
     loading.textContent = "\u26A0\uFE0F " + e.message;
   }
@@ -395,7 +441,8 @@ async function generateImage() {
 
 function addHistory() {
   if (!selected[0] || !selected[1] || !selected[2]) return;
-  history.unshift({ words: [selected[0], selected[1], selected[2]], time: new Date().toLocaleString("en-US", { hour12: false }) });
+  const entry = { id: Date.now().toString(), words: [selected[0], selected[1], selected[2]], time: new Date().toLocaleString("en-US", { hour12: false }), hasImage: false };
+  history.unshift(entry);
   if (history.length > 20) history.pop();
   saveHistory();
   renderHistory();
@@ -406,19 +453,35 @@ function renderHistory() {
   if (history.length === 0) { list.innerHTML = '<div class="history-empty">No records yet</div>'; return; }
   list.innerHTML = history.map((h, i) =>
     '<div class="history-item" onclick="restoreHistory(' + i + ')">' +
-    '<span class="history-words">' + displayText(0, h.words[0]) + " + " + h.words[1] + " + " + h.words[2] + '</span>' +
+    '<span class="history-words">' + (h.hasImage ? '\uD83D\uDDBC\uFE0F ' : '') + displayText(0, h.words[0]) + " + " + h.words[1] + " + " + h.words[2] + '</span>' +
     '<span class="history-time">' + h.time + '</span></div>'
   ).join("");
 }
 
-function restoreHistory(i) {
+async function restoreHistory(i) {
   const h = history[i];
   selected = [h.words[0], h.words[1], h.words[2]];
   [0, 1, 2].forEach(c => { document.getElementById("word-" + c).textContent = displayText(c, selected[c]); flashCol(c); });
   updatePrompt();
+  const area = document.getElementById("imgArea");
+  const img = document.getElementById("genImg");
+  const loading = document.getElementById("imgLoading");
+  if (h.hasImage && h.id) {
+    const dataUrl = await loadImage(h.id).catch(() => null);
+    if (dataUrl) {
+      area.classList.add("visible");
+      img.src = dataUrl;
+      img.style.display = "";
+      loading.style.display = "none";
+    } else {
+      area.classList.remove("visible");
+    }
+  } else {
+    area.classList.remove("visible");
+  }
 }
 
-function clearHistory() { history = []; saveHistory(); renderHistory(); }
+function clearHistory() { history = []; saveHistory(); renderHistory(); clearImages().catch(() => {}); }
 
 function togglePanel(name) {
   const body = document.getElementById(name + "Body");
