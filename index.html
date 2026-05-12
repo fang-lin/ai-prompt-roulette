@@ -18,7 +18,7 @@
   .header h1 { font-size: 32px; margin-bottom: 4px; }
   .header .subtitle { font-size: 15px; color: #666; }
 
-  .roulette { display: flex; gap: 16px; max-width: 900px; margin: 0 auto 20px; }
+  .roulette { display: flex; gap: 16px; max-width: 1200px; margin: 0 auto 20px; }
   .col {
     flex: 1; border-radius: 16px; padding: 20px 12px; text-align: center;
     display: flex; flex-direction: column; align-items: center; height: 200px;
@@ -28,11 +28,12 @@
   .col-role { background: #d1fae5; }
   .col-verb { background: #fef9c3; }
   .col-mod  { background: #fce7f3; }
+  .col-style { background: #e0e7ff; }
 
   .col-title { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; opacity: 0.7; }
   .col-word {
     flex: 1; display: flex; align-items: center; justify-content: center;
-    font-size: 28px; font-weight: 700; line-height: 1.3; padding: 8px; overflow: hidden;
+    font-size: 24px; font-weight: 700; line-height: 1.3; padding: 8px; overflow: hidden;
   }
   .col-word.spinning { animation: pulse 0.08s infinite alternate; }
   @keyframes pulse { to { opacity: 0.6; } }
@@ -55,7 +56,7 @@
   .big-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
   .prompt-card {
-    max-width: 900px; margin: 0 auto 20px; background: #fff; border-radius: 16px;
+    max-width: 1200px; margin: 0 auto 20px; background: #fff; border-radius: 16px;
     padding: 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);
   }
   .prompt-card h3 { font-size: 15px; margin-bottom: 8px; color: #888; }
@@ -77,13 +78,13 @@
   .btn-gen { background: #dcfce7; color: #166534; }
   .btn-gen:hover { background: #bbf7d0; }
 
-  .img-area { max-width: 900px; margin: 0 auto 20px; text-align: center; display: none; }
+  .img-area { max-width: 1200px; margin: 0 auto 20px; text-align: center; display: none; }
   .img-area.visible { display: block; }
   .img-loading { padding: 40px; font-size: 18px; color: #888; }
   .img-area img { max-width: 100%; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
 
   .panel {
-    max-width: 900px; margin: 0 auto 16px; background: #fff; border-radius: 16px;
+    max-width: 1200px; margin: 0 auto 16px; background: #fff; border-radius: 16px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.06); overflow: hidden;
   }
   .panel-header {
@@ -112,7 +113,7 @@
   .clear-btn:hover { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
 
   .wordbank-cols { display: flex; gap: 16px; flex-wrap: wrap; }
-  .wb-col { flex: 1; min-width: 220px; }
+  .wb-col { flex: 1; min-width: 200px; }
   .wb-col h4 { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
   .wb-item {
     display: flex; justify-content: space-between; align-items: center;
@@ -150,7 +151,7 @@
 
 <div class="header">
   <h1>&#x1F3B0; AI Prompt Roulette</h1>
-  <div class="subtitle">Team Ice Breaker &middot; Spin three columns, generate an image</div>
+  <div class="subtitle">Team Ice Breaker &middot; Spin four columns, generate an image</div>
 </div>
 
 <div class="roulette" id="roulette">
@@ -168,6 +169,11 @@
     <div class="col-title">How / Where</div>
     <div class="col-word" id="word-2">&mdash;</div>
     <button class="col-btn" onclick="spinOne(2)">&#x1F3B2; Spin</button>
+  </div>
+  <div class="col col-style" id="col-3">
+    <div class="col-title">Style</div>
+    <div class="col-word" id="word-3">&mdash;</div>
+    <button class="col-btn" onclick="spinOne(3)">&#x1F3B2; Spin</button>
   </div>
 </div>
 
@@ -217,6 +223,7 @@
 </div>
 
 <script>
+const NUM_COLS = 4;
 const DEFAULT_BANKS = [
   [
     { display: "Lin (Developer)", prompt: "Lin, a developer" },
@@ -244,22 +251,56 @@ const DEFAULT_BANKS = [
     "on the moon", "in a haunted house", "while juggling flaming torches",
     "on a flying carpet", "surrounded by penguins", "in zero gravity",
     "wearing a dinosaur costume", "on top of a skyscraper", "in a ball pit"
+  ],
+  [
+    "Pixar style, 3D render, cinematic lighting",
+    "watercolor painting, soft brushstrokes",
+    "pixel art, retro 16-bit game style",
+    "anime style, Studio Ghibli inspired",
+    "oil painting, Renaissance masterpiece",
+    "cyberpunk neon, digital art",
+    "comic book style, bold outlines, halftone dots",
+    "low poly 3D, geometric minimal",
+    "charcoal sketch, black and white",
+    "stained glass window, vibrant colors",
+    "claymation, stop motion style",
+    "vaporwave aesthetic, pastel gradients",
+    "ukiyo-e Japanese woodblock print",
+    "pop art, Andy Warhol inspired",
+    "isometric illustration, flat design",
+    "photorealistic, 8K, ultra detailed",
+    "Tim Burton style, gothic whimsical",
+    "Monet impressionist, dreamy light",
+    "Soviet propaganda poster, bold red",
+    "synthwave retro, neon grid sunset",
+    "children's book illustration, crayon",
+    "blueprint technical drawing, white on blue",
+    "Chinese ink wash painting, minimalist",
+    "graffiti street art, spray paint",
+    "Art Nouveau, ornate flowing lines",
+    "LEGO brick scene, toy photography",
+    "papercraft diorama, layered cutout",
+    "marble sculpture, classical Greek",
+    "glitch art, corrupted digital",
+    "steampunk Victorian, brass gears",
+    "noir film still, dramatic shadows",
+    "Bauhaus geometric, primary colors"
   ]
 ];
 
-const COL_TITLES = ["Who", "Doing What", "How / Where"];
-const STORAGE_KEY_BANKS = "apr_wordbanks_v2";
-const STORAGE_KEY_HISTORY = "apr_history_v2";
+const COL_TITLES = ["Who", "Doing What", "How / Where", "Style"];
+const STORAGE_KEY_BANKS = "apr_wordbanks_v3";
+const STORAGE_KEY_HISTORY = "apr_history_v3";
 
 let banks = loadBanks();
-let selected = [null, null, null];
-let spinning = [false, false, false];
+let selected = Array(NUM_COLS).fill(null);
+let spinning = Array(NUM_COLS).fill(false);
 let history = loadHistory();
 
 function loadBanks() {
   try {
     const d = JSON.parse(localStorage.getItem(STORAGE_KEY_BANKS));
-    if (d && d.length === 3 && Array.isArray(d[0])) return d;
+    if (d && d.length === NUM_COLS && Array.isArray(d[0])) return d;
   } catch {}
   return JSON.parse(JSON.stringify(DEFAULT_BANKS));
 }
@@ -273,7 +314,6 @@ function loadHistory() {
 }
 function saveHistory() { localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(history)); }
 
-// === IndexedDB for images ===
 let imgDB = null;
 function openImgDB() {
   return new Promise((resolve, reject) => {
@@ -344,12 +384,11 @@ function spinOne(col) {
 
 function spinAll() {
   if (spinning.some(Boolean)) return;
-  [0, 1, 2].forEach(i => { spinning[i] = true; });
+  for (let i = 0; i < NUM_COLS; i++) spinning[i] = true;
   disableButtons();
-  const durations = [800 + Math.random() * 400, 0, 0];
-  durations[1] = durations[0] + 200;
-  durations[2] = durations[1] + 200;
-  [0, 1, 2].forEach(col => {
+  const durations = [800 + Math.random() * 400];
+  for (let i = 1; i < NUM_COLS; i++) durations[i] = durations[i - 1] + 200;
+  for (let col = 0; col < NUM_COLS; col++) {
     const wordEl = document.getElementById("word-" + col);
     wordEl.classList.add("spinning");
     const start = Date.now();
@@ -364,10 +403,10 @@ function spinAll() {
         flashCol(col);
         spinning[col] = false;
         disableButtons();
-        if (col === 2) { updatePrompt(); addHistory(); }
+        if (col === NUM_COLS - 1) { updatePrompt(); addHistory(); }
       }
     }, 80);
-  });
+  }
 }
 
 function flashCol(col) {
@@ -384,10 +423,10 @@ function disableButtons() {
 
 function updatePrompt() {
   const card = document.getElementById("promptCard");
-  if (!selected[0] || !selected[1] || !selected[2]) { card.style.display = "none"; return; }
+  if (selected.some(s => !s)) { card.style.display = "none"; return; }
   card.style.display = "";
-  document.getElementById("promptCombo").textContent = displayText(0, selected[0]) + " + " + selected[1] + " + " + selected[2];
-  const en = promptText(0, selected[0]) + " is " + selected[1] + " " + selected[2] + ", Pixar style, 3D render, cinematic lighting, humorous, highly detailed";
+  document.getElementById("promptCombo").textContent = selected.map((s, i) => displayText(i, s)).join(" + ");
+  const en = promptText(0, selected[0]) + " is " + selected[1] + " " + selected[2] + ", " + selected[3] + ", humorous, highly detailed";
   document.getElementById("promptEdit").value = en;
 }
 
@@ -449,8 +488,8 @@ async function generateImage() {
 }
 
 function addHistory() {
-  if (!selected[0] || !selected[1] || !selected[2]) return;
-  const entry = { id: Date.now().toString(), words: [selected[0], selected[1], selected[2]], time: new Date().toLocaleString("en-US", { hour12: false }), hasImage: false };
+  if (selected.some(s => !s)) return;
+  const entry = { id: Date.now().toString(), words: selected.slice(), time: new Date().toLocaleString("en-US", { hour12: false }), hasImage: false };
   history.unshift(entry);
   if (history.length > 20) {
     const evicted = history.pop();
@@ -470,15 +509,18 @@ function renderHistory() {
   if (history.length === 0) { list.innerHTML = '<div class="history-empty">No records yet</div>'; return; }
   list.innerHTML = history.map((h, i) =>
     '<div class="history-item" onclick="restoreHistory(' + i + ')">' +
-    '<span class="history-words">' + (h.hasImage ? '\uD83D\uDDBC\uFE0F ' : '') + esc(displayText(0, h.words[0])) + " + " + esc(h.words[1]) + " + " + esc(h.words[2]) + '</span>' +
+    '<span class="history-words">' + (h.hasImage ? '\uD83D\uDDBC\uFE0F ' : '') + h.words.map((w, c) => esc(displayText(c, w))).join(" + ") + '</span>' +
     '<span class="history-time">' + h.time + '</span></div>'
   ).join("");
 }
 
 async function restoreHistory(i) {
   const h = history[i];
-  selected = [h.words[0], h.words[1], h.words[2]];
-  [0, 1, 2].forEach(c => { document.getElementById("word-" + c).textContent = displayText(c, selected[c]); flashCol(c); });
+  selected = h.words.slice();
+  for (let c = 0; c < NUM_COLS; c++) {
+    document.getElementById("word-" + c).textContent = displayText(c, selected[c]);
+    flashCol(c);
+  }
   updatePrompt();
   const area = document.getElementById("imgArea");
   const img = document.getElementById("genImg");
