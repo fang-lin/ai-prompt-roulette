@@ -137,6 +137,21 @@
 
   .footer { text-align: center; margin-top: 32px; font-size: 12px; color: #aaa; }
 
+  .closed-banner {
+    position: fixed; inset: 0; z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.45); backdrop-filter: blur(3px);
+  }
+  .closed-sign {
+    background: #fffbeb; border: 3px dashed #b45309; border-radius: 20px;
+    padding: 48px 40px; max-width: 520px; text-align: center;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.25); transform: rotate(-2deg);
+  }
+  .closed-sign h1 { font-size: 42px; margin-bottom: 8px; }
+  .closed-sign .subtitle-closed { font-size: 14px; color: #92400e; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px; }
+  .closed-sign p { font-size: 16px; color: #78350f; line-height: 1.7; margin-bottom: 12px; }
+  .closed-sign .note { font-size: 13px; color: #a16207; font-style: italic; }
+
   @media (max-width: 640px) {
     .roulette { flex-direction: column; }
     .col { height: 180px; }
@@ -148,6 +163,16 @@
 </style>
 </head>
 <body>
+
+<div class="closed-banner">
+  <div class="closed-sign">
+    <h1>&#x1F36B; CLOSED</h1>
+    <div class="subtitle-closed">As usual</div>
+    <p>The owner of this shop is <strong>incredibly lazy</strong> and keeps it shut most of the time.</p>
+    <p>If you'd like it to reopen, you'll need to track him down and <strong>bribe him with chocolate</strong>.</p>
+    <p class="note">Premium Swiss chocolate recommended. No raisins. Delivery required.</p>
+  </div>
+</div>
 
 <div class="header">
   <h1>&#x1F3B0; AI Prompt Roulette</h1>
