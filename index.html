@@ -226,11 +226,11 @@
 const NUM_COLS = 4;
 const DEFAULT_BANKS = [
   [
-    { display: "Lin (Developer)", prompt: "Lin, a developer" },
-    { display: "Manuel (Developer)", prompt: "Manuel, a developer" },
-    { display: "Timo (Developer)", prompt: "Timo, a developer" },
-    { display: "Katharina (PO)", prompt: "Katharina, a product owner" },
-    { display: "Serkan (Tech Lead)", prompt: "Serkan, a tech lead" }
+    { display: "Lin (Developer, He)", prompt: "Lin, a male developer" },
+    { display: "Manuel (Developer, He)", prompt: "Manuel, a male developer" },
+    { display: "Timo (Developer, He)", prompt: "Timo, a male developer" },
+    { display: "Katharina (PO, She)", prompt: "Katharina, a female product owner" },
+    { display: "Serkan (Tech Lead, He)", prompt: "Serkan, a male tech lead" }
   ],
   [
     "refactoring code", "deploying to production", "debugging", "reviewing code",
@@ -560,8 +560,9 @@ function renderWordbank() {
     ).join("") +
     '<div class="wb-add-row">' +
     (col === 0
-      ? '<input class="wb-input" id="wbIn' + col + 'name" placeholder="Name" onkeydown="if(event.key===\'Enter\')addWord(' + col + ')">' +
-        '<input class="wb-input" id="wbIn' + col + 'role" placeholder="Role" onkeydown="if(event.key===\'Enter\')addWord(' + col + ')">'
+      ? '<input class="wb-input" id="wbIn0name" placeholder="Name" onkeydown="if(event.key===\'Enter\')addWord(0)">' +
+        '<input class="wb-input" id="wbIn0role" placeholder="Role" onkeydown="if(event.key===\'Enter\')addWord(0)">' +
+        '<input class="wb-input" id="wbIn0gender" placeholder="He/She" style="max-width:60px" onkeydown="if(event.key===\'Enter\')addWord(0)">'
       : '<input class="wb-input" id="wbIn' + col + '" placeholder="Add new word..." onkeydown="if(event.key===\'Enter\')addWord(' + col + ')">') +
     '<button class="wb-add-btn" onclick="addWord(' + col + ')">Add</button>' +
     '</div></div>'
@@ -574,8 +575,10 @@ function addWord(col) {
   if (col === 0) {
     const name = document.getElementById("wbIn0name").value.trim();
     const role = document.getElementById("wbIn0role").value.trim();
-    if (!name || !role) return;
-    banks[0].push({ display: name + " (" + role + ")", prompt: name + ", a " + role.toLowerCase() });
+    const gender = document.getElementById("wbIn0gender").value.trim().toLowerCase();
+    if (!name || !role || !gender) return;
+    const gLabel = gender === "she" ? "female" : "male";
+    banks[0].push({ display: name + " (" + role + ", " + (gender === "she" ? "She" : "He") + ")", prompt: name + ", a " + gLabel + " " + role.toLowerCase() });
   } else {
     const v = document.getElementById("wbIn" + col).value.trim();
     if (!v) return;
