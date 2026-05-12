@@ -454,7 +454,7 @@ async function generateImage() {
   loading.textContent = "\u23F3 Generating image, please wait...";
   const targetId = history.length > 0 ? history[0].id : null;
   try {
-    const resp = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=AIzaSyBhSENSNxmAZVjZN2PqTyfJ6mstVTa6dgo", {
+    const resp = await fetch("/api/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
