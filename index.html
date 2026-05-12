@@ -21,7 +21,7 @@
   .roulette { display: flex; gap: 16px; max-width: 900px; margin: 0 auto 20px; }
   .col {
     flex: 1; border-radius: 16px; padding: 20px 12px; text-align: center;
-    display: flex; flex-direction: column; align-items: center; min-height: 200px;
+    display: flex; flex-direction: column; align-items: center; height: 200px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.06); transition: box-shadow 0.3s;
   }
   .col.flash { box-shadow: 0 0 20px rgba(255,200,0,0.5); }
@@ -32,7 +32,7 @@
   .col-title { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; opacity: 0.7; }
   .col-word {
     flex: 1; display: flex; align-items: center; justify-content: center;
-    font-size: 28px; font-weight: 700; line-height: 1.3; padding: 8px; min-height: 80px;
+    font-size: 28px; font-weight: 700; line-height: 1.3; padding: 8px; overflow: hidden;
   }
   .col-word.spinning { animation: pulse 0.08s infinite alternate; }
   @keyframes pulse { to { opacity: 0.6; } }
@@ -138,7 +138,7 @@
 
   @media (max-width: 640px) {
     .roulette { flex-direction: column; }
-    .col { min-height: 140px; }
+    .col { height: 180px; }
     .col-word { font-size: 22px; }
     .big-btn { font-size: 18px; padding: 12px 36px; }
     .action-btns { flex-direction: column; }
