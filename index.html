@@ -313,6 +313,7 @@ async function clearImages() {
 }
 
 function randItem(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function esc(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
 
 function displayText(col, item) { return col === 0 ? item.display : item; }
 function promptText(col, item) { return col === 0 ? item.prompt : item; }
@@ -406,10 +407,13 @@ async function generateImage() {
   const area = document.getElementById("imgArea");
   const img = document.getElementById("genImg");
   const loading = document.getElementById("imgLoading");
+  const genBtn = document.getElementById("genBtn");
+  genBtn.disabled = true;
   area.classList.add("visible");
   img.style.display = "none";
   loading.style.display = "";
   loading.textContent = "\u23F3 Generating image, please wait...";
+  const targetId = history.length > 0 ? history[0].id : null;
   try {
     const resp = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=AIzaSyBhSENSNxmAZVjZN2PqTyfJ6mstVTa6dgo", {
       method: "POST",
@@ -428,14 +432,19 @@ async function generateImage() {
     img.src = dataUrl;
     loading.style.display = "none";
     img.style.display = "";
-    if (history.length > 0) {
-      history[0].hasImage = true;
-      saveHistory();
-      saveImage(history[0].id, dataUrl).catch(() => {});
-      renderHistory();
+    if (targetId) {
+      const entry = history.find(h => h.id === targetId);
+      if (entry) {
+        entry.hasImage = true;
+        saveHistory();
+        saveImage(targetId, dataUrl).catch(() => {});
+        renderHistory();
+      }
     }
   } catch (e) {
     loading.textContent = "\u26A0\uFE0F " + e.message;
+  } finally {
+    genBtn.disabled = false;
   }
 }
 
@@ -443,7 +452,15 @@ function addHistory() {
   if (!selected[0] || !selected[1] || !selected[2]) return;
   const entry = { id: Date.now().toString(), words: [selected[0], selected[1], selected[2]], time: new Date().toLocaleString("en-US", { hour12: false }), hasImage: false };
   history.unshift(entry);
-  if (history.length > 20) history.pop();
+  if (history.length > 20) {
+    const evicted = history.pop();
+    if (evicted.hasImage && evicted.id) {
+      openImgDB().then(db => {
+        const tx = db.transaction("images", "readwrite");
+        tx.objectStore("images").delete(evicted.id);
+      }).catch(() => {});
+    }
+  }
   saveHistory();
   renderHistory();
 }
@@ -453,7 +470,7 @@ function renderHistory() {
   if (history.length === 0) { list.innerHTML = '<div class="history-empty">No records yet</div>'; return; }
   list.innerHTML = history.map((h, i) =>
     '<div class="history-item" onclick="restoreHistory(' + i + ')">' +
-    '<span class="history-words">' + (h.hasImage ? '\uD83D\uDDBC\uFE0F ' : '') + displayText(0, h.words[0]) + " + " + h.words[1] + " + " + h.words[2] + '</span>' +
+    '<span class="history-words">' + (h.hasImage ? '\uD83D\uDDBC\uFE0F ' : '') + esc(displayText(0, h.words[0])) + " + " + esc(h.words[1]) + " + " + esc(h.words[2]) + '</span>' +
     '<span class="history-time">' + h.time + '</span></div>'
   ).join("");
 }
@@ -496,7 +513,7 @@ function renderWordbank() {
   container.innerHTML = banks.map((bank, col) =>
     '<div class="wb-col"><h4>' + COL_TITLES[col] + '</h4>' +
     bank.map((w, j) =>
-      '<div class="wb-item"><span>' + displayText(col, w) + '</span>' +
+      '<div class="wb-item"><span>' + esc(displayText(col, w)) + '</span>' +
       '<button class="wb-del" onclick="delWord(' + col + ',' + j + ')">\u2715</button></div>'
     ).join("") +
     '<div class="wb-add-row">' +
