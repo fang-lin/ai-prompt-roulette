@@ -219,9 +219,11 @@
 <script>
 const DEFAULT_BANKS = [
   [
-    "backend engineer", "frontend engineer", "product manager", "designer",
-    "scrum master", "QA engineer", "intern", "CTO",
-    "DevOps engineer", "data analyst"
+    { display: "Lin (Developer)", prompt: "Lin, a developer" },
+    { display: "Manuel (Developer)", prompt: "Manuel, a developer" },
+    { display: "Timo (Developer)", prompt: "Timo, a developer" },
+    { display: "Katharina (PO)", prompt: "Katharina, a product owner" },
+    { display: "Serkan (Tech Lead)", prompt: "Serkan, a tech lead" }
   ],
   [
     "refactoring code", "deploying to production", "debugging", "reviewing code",
@@ -273,6 +275,9 @@ function saveHistory() { localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringif
 
 function randItem(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
+function displayText(col, item) { return col === 0 ? item.display : item; }
+function promptText(col, item) { return col === 0 ? item.prompt : item; }
+
 function spinOne(col) {
   if (spinning[col] || banks[col].length === 0) return;
   spinning[col] = true;
@@ -282,12 +287,12 @@ function spinOne(col) {
   const duration = 800 + Math.random() * 400;
   const start = Date.now();
   const iv = setInterval(() => {
-    wordEl.textContent = randItem(banks[col]);
+    wordEl.textContent = displayText(col, randItem(banks[col]));
     if (Date.now() - start >= duration) {
       clearInterval(iv);
       const pick = randItem(banks[col]);
       selected[col] = pick;
-      wordEl.textContent = pick;
+      wordEl.textContent = displayText(col, pick);
       wordEl.classList.remove("spinning");
       flashCol(col);
       spinning[col] = false;
@@ -309,12 +314,12 @@ function spinAll() {
     wordEl.classList.add("spinning");
     const start = Date.now();
     const iv = setInterval(() => {
-      wordEl.textContent = randItem(banks[col]);
+      wordEl.textContent = displayText(col, randItem(banks[col]));
       if (Date.now() - start >= durations[col]) {
         clearInterval(iv);
         const pick = randItem(banks[col]);
         selected[col] = pick;
-        wordEl.textContent = pick;
+        wordEl.textContent = displayText(col, pick);
         wordEl.classList.remove("spinning");
         flashCol(col);
         spinning[col] = false;
@@ -341,8 +346,8 @@ function updatePrompt() {
   const card = document.getElementById("promptCard");
   if (!selected[0] || !selected[1] || !selected[2]) { card.style.display = "none"; return; }
   card.style.display = "";
-  document.getElementById("promptCombo").textContent = selected[0] + " + " + selected[1] + " + " + selected[2];
-  const en = "A " + selected[0] + " is " + selected[1] + " " + selected[2] + ", Pixar style, 3D render, cinematic lighting, humorous, highly detailed";
+  document.getElementById("promptCombo").textContent = displayText(0, selected[0]) + " + " + selected[1] + " + " + selected[2];
+  const en = promptText(0, selected[0]) + " is " + selected[1] + " " + selected[2] + ", Pixar style, 3D render, cinematic lighting, humorous, highly detailed";
   document.getElementById("promptEdit").value = en;
 }
 
@@ -385,7 +390,7 @@ function renderHistory() {
   if (history.length === 0) { list.innerHTML = '<div class="history-empty">No records yet</div>'; return; }
   list.innerHTML = history.map((h, i) =>
     '<div class="history-item" onclick="restoreHistory(' + i + ')">' +
-    '<span class="history-words">' + h.words[0] + " + " + h.words[1] + " + " + h.words[2] + '</span>' +
+    '<span class="history-words">' + displayText(0, h.words[0]) + " + " + h.words[1] + " + " + h.words[2] + '</span>' +
     '<span class="history-time">' + h.time + '</span></div>'
   ).join("");
 }
@@ -393,7 +398,7 @@ function renderHistory() {
 function restoreHistory(i) {
   const h = history[i];
   selected = [h.words[0], h.words[1], h.words[2]];
-  [0, 1, 2].forEach(c => { document.getElementById("word-" + c).textContent = selected[c]; flashCol(c); });
+  [0, 1, 2].forEach(c => { document.getElementById("word-" + c).textContent = displayText(c, selected[c]); flashCol(c); });
   updatePrompt();
 }
 
@@ -412,11 +417,14 @@ function renderWordbank() {
   container.innerHTML = banks.map((bank, col) =>
     '<div class="wb-col"><h4>' + COL_TITLES[col] + '</h4>' +
     bank.map((w, j) =>
-      '<div class="wb-item"><span>' + w + '</span>' +
+      '<div class="wb-item"><span>' + displayText(col, w) + '</span>' +
       '<button class="wb-del" onclick="delWord(' + col + ',' + j + ')">\u2715</button></div>'
     ).join("") +
     '<div class="wb-add-row">' +
-    '<input class="wb-input" id="wbIn' + col + '" placeholder="Add new word..." onkeydown="if(event.key===\'Enter\')addWord(' + col + ')">' +
+    (col === 0
+      ? '<input class="wb-input" id="wbIn' + col + 'name" placeholder="Name" onkeydown="if(event.key===\'Enter\')addWord(' + col + ')">' +
+        '<input class="wb-input" id="wbIn' + col + 'role" placeholder="Role" onkeydown="if(event.key===\'Enter\')addWord(' + col + ')">'
+      : '<input class="wb-input" id="wbIn' + col + '" placeholder="Add new word..." onkeydown="if(event.key===\'Enter\')addWord(' + col + ')">') +
     '<button class="wb-add-btn" onclick="addWord(' + col + ')">Add</button>' +
     '</div></div>'
   ).join("");
@@ -425,9 +433,16 @@ function renderWordbank() {
 function delWord(col, idx) { banks[col].splice(idx, 1); saveBanks(); renderWordbank(); }
 
 function addWord(col) {
-  const v = document.getElementById("wbIn" + col).value.trim();
-  if (!v) return;
-  banks[col].push(v);
+  if (col === 0) {
+    const name = document.getElementById("wbIn0name").value.trim();
+    const role = document.getElementById("wbIn0role").value.trim();
+    if (!name || !role) return;
+    banks[0].push({ display: name + " (" + role + ")", prompt: name + ", a " + role.toLowerCase() });
+  } else {
+    const v = document.getElementById("wbIn" + col).value.trim();
+    if (!v) return;
+    banks[col].push(v);
+  }
   saveBanks();
   renderWordbank();
 }
