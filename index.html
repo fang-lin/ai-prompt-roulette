@@ -372,7 +372,7 @@ async function generateImage() {
   loading.style.display = "";
   loading.textContent = "\u23F3 Generating image, please wait...";
   try {
-    const resp = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=AIzaSyBhSENSNxmAZVjZN2PqTyfJ6mstVTa6dgo", {
+    const resp = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=AIzaSyBhSENSNxmAZVjZN2PqTyfJ6mstVTa6dgo", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
