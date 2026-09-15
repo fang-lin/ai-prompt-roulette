@@ -1,0 +1,14 @@
+{
+  "name": "ai-prompt-roulette",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Team ice breaker: spin four columns into a prompt and generate an image",
+  "scripts": {
+    "build": "node build.js",
+    "build:closed": "SHOP_OPEN=false node build.js"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
