@@ -1,4 +1,8 @@
 export default async function handler(req, res) {
+  if (process.env.SHOP_OPEN === "false") {
+    return res.status(503).json({ error: "Shop is closed" });
+  }
+
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const apiKey = process.env.GEMINI_API_KEY;
