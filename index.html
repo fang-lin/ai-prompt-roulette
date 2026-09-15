@@ -254,7 +254,7 @@
 </div>
 
 <div class="footer">
-  Image generation powered by Gemini
+  Image generation powered by Gemini, with Pollinations.ai as fallback
 </div>
 
 <script>
@@ -477,6 +477,40 @@ function copyPrompt() {
   });
 }
 
+async function generateWithGemini(prompt) {
+  const resp = await fetch("/api/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: "Generate an image: " + prompt }] }],
+      generationConfig: { responseModalities: ["IMAGE", "TEXT"] }
+    })
+  });
+  if (!resp.ok) throw new Error("API error: " + resp.status);
+  const data = await resp.json();
+  const parts = data.candidates?.[0]?.content?.parts || [];
+  const imgPart = parts.find(p => p.inlineData);
+  if (!imgPart) throw new Error("No image returned");
+  return "data:" + imgPart.inlineData.mimeType + ";base64," + imgPart.inlineData.data;
+}
+
+// Fallback used when Gemini is unavailable. Needs no API key, and serves
+// CORS headers, so the image can be read back as a data URL and stored in
+// history the same way a Gemini image is.
+async function generateWithPollinations(prompt) {
+  const url = "https://image.pollinations.ai/prompt/" + encodeURIComponent(prompt) +
+    "?width=768&height=768&nologo=true&seed=" + Math.floor(Math.random() * 100000);
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error("Fallback error: " + resp.status);
+  const blob = await resp.blob();
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error("Could not read fallback image"));
+    reader.readAsDataURL(blob);
+  });
+}
+
 async function generateImage() {
   const area = document.getElementById("imgArea");
   const img = document.getElementById("genImg");
@@ -488,21 +522,15 @@ async function generateImage() {
   loading.style.display = "";
   loading.textContent = "\u23F3 Generating image, please wait...";
   const targetId = history.length > 0 ? history[0].id : null;
+  const prompt = getEditedPrompt();
   try {
-    const resp = await fetch("/api/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: "Generate an image: " + getEditedPrompt() }] }],
-        generationConfig: { responseModalities: ["IMAGE", "TEXT"] }
-      })
-    });
-    if (!resp.ok) throw new Error("API error: " + resp.status);
-    const data = await resp.json();
-    const parts = data.candidates?.[0]?.content?.parts || [];
-    const imgPart = parts.find(p => p.inlineData);
-    if (!imgPart) throw new Error("No image returned");
-    const dataUrl = "data:" + imgPart.inlineData.mimeType + ";base64," + imgPart.inlineData.data;
+    let dataUrl;
+    try {
+      dataUrl = await generateWithGemini(prompt);
+    } catch (e) {
+      loading.textContent = "\u23F3 Gemini unavailable (" + e.message + "). Falling back to Pollinations.ai...";
+      dataUrl = await generateWithPollinations(prompt);
+    }
     img.src = dataUrl;
     loading.style.display = "none";
     img.style.display = "";
