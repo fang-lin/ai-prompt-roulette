@@ -16,8 +16,11 @@ if (!committed) {
   process.exit(1);
 }
 
-if (raw === undefined || raw === "") {
-  console.log(`build: SHOP_OPEN not set, keeping committed status "${committed[1]}"`);
+// Vercel replaces sensitive variables with the literal "[SENSITIVE]" during
+// the build, so only the two expected values are trusted here. Anything else
+// keeps the committed status rather than guessing.
+if (raw !== "true" && raw !== "false") {
+  console.log(`build: SHOP_OPEN is not "true" or "false", keeping committed status "${committed[1]}"`);
   process.exit(0);
 }
 
