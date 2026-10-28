@@ -82,6 +82,9 @@
   .img-area.visible { display: block; }
   .img-loading { padding: 40px; font-size: 18px; color: #888; }
   .img-area img { max-width: 100%; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+  .headline { max-width: 768px; margin: 16px auto 0; padding: 12px 18px; background: #111; color: #fff; font-family: Impact, "Arial Black", sans-serif; font-size: 24px; line-height: 1.25; text-transform: uppercase; letter-spacing: 0.5px; border-left: 8px solid #e11d48; text-align: left; }
+  .headline::before { content: "EXCLUSIVE \2014  "; color: #fde047; }
+  .duo-badge { font-size: 13px; font-weight: bold; color: #e11d48; margin-top: 4px; }
 
   .panel {
     max-width: 1200px; margin: 0 auto 16px; background: #fff; border-radius: 16px;
@@ -193,6 +196,7 @@
   <div class="col col-role" id="col-0">
     <div class="col-title">Who</div>
     <div class="col-word" id="word-0">&mdash;</div>
+    <div class="duo-badge" id="duoBadge" style="display:none;">&#x1F46F; DOUBLE TROUBLE!</div>
     <button class="col-btn" onclick="spinOne(0)">&#x1F3B2; Spin</button>
   </div>
   <div class="col col-verb" id="col-1">
@@ -229,6 +233,7 @@
 <div class="img-area" id="imgArea">
   <div class="img-loading" id="imgLoading">&#x23F3; Generating image, please wait...</div>
   <img id="genImg" style="display:none;" alt="AI generated image">
+  <div class="headline" id="headline" style="display:none;"></div>
 </div>
 
 <div class="panel">
@@ -259,6 +264,30 @@
 
 <script>
 const NUM_COLS = 4;
+// Words added after the v3 word bank. Kept separate so loadBanks() can append
+// them to a word bank saved under the v3 key without losing custom words.
+const EXTRA_WORDS = [
+  [],
+  [
+    "apologizing to the printer", "falling asleep in a 1:1", "pretending to be on mute",
+    "explaining the bug to a rubber duck", "estimating a task as 'just 5 minutes'",
+    "blaming the cache", "deleting the production database", "replying-all by accident",
+    "hiding from the PO", "naming a variable 'final_final_v2'", "sharing the wrong screen",
+    "saying 'works on my machine'", "stealing someone's lunch from the office fridge",
+    "pushing on a Friday at 5pm", "nodding through a meeting they didn't understand"
+  ],
+  [
+    "while being chased by a goose", "inside a Jira ticket", "at a wedding they weren't invited to",
+    "riding a shopping cart downhill", "with a raccoon as their manager",
+    "on a Teams call with the camera accidentally on", "inside a vending machine",
+    "while a mariachi band follows them", "in the middle of a fire drill",
+    "on a tiny tricycle", "while being judged by a panel of pigeons",
+    "dressed as a giant banana", "trapped in an infinite loading spinner",
+    "at a medieval jousting tournament"
+  ],
+  []
+];
+const DUO_CHANCE = 0.2;
 const DEFAULT_BANKS = [
   [
     { display: "Lin (Developer, He)", prompt: "Lin, a male developer" },
@@ -275,7 +304,8 @@ const DEFAULT_BANKS = [
     "renaming variables", "copy-pasting from Stack Overflow", "fighting merge conflicts",
     "reading error logs", "optimizing queries", "rolling back a release",
     "writing unit tests", "ignoring Slack messages", "attending a retro",
-    "presenting a demo"
+    "presenting a demo",
+    ...EXTRA_WORDS[1]
   ],
   [
     "on the edge of a volcano", "while breakdancing", "wearing a spacesuit",
@@ -285,7 +315,8 @@ const DEFAULT_BANKS = [
     "on a roller coaster", "inside a giant bubble", "during a thunderstorm",
     "on the moon", "in a haunted house", "while juggling flaming torches",
     "on a flying carpet", "surrounded by penguins", "in zero gravity",
-    "wearing a dinosaur costume", "on top of a skyscraper", "in a ball pit"
+    "wearing a dinosaur costume", "on top of a skyscraper", "in a ball pit",
+    ...EXTRA_WORDS[2]
   ],
   [
     "Pixar style, 3D render, cinematic lighting",
@@ -324,7 +355,8 @@ const DEFAULT_BANKS = [
 ];
 
 const COL_TITLES = ["Who", "Doing What", "How / Where", "Style"];
-const STORAGE_KEY_BANKS = "apr_wordbanks_v3";
+const STORAGE_KEY_BANKS = "apr_wordbanks_v4";
+const STORAGE_KEY_BANKS_V3 = "apr_wordbanks_v3";
 const STORAGE_KEY_HISTORY = "apr_history_v3";
 
 let banks = loadBanks();
@@ -336,6 +368,14 @@ function loadBanks() {
   try {
     const d = JSON.parse(localStorage.getItem(STORAGE_KEY_BANKS));
     if (d && d.length === NUM_COLS && Array.isArray(d[0])) return d;
+  } catch {}
+  try {
+    const v3 = JSON.parse(localStorage.getItem(STORAGE_KEY_BANKS_V3));
+    if (v3 && v3.length === NUM_COLS && Array.isArray(v3[0])) {
+      v3.forEach((bank, col) => EXTRA_WORDS[col].forEach(w => { if (!bank.includes(w)) bank.push(w); }));
+      localStorage.setItem(STORAGE_KEY_BANKS, JSON.stringify(v3));
+      return v3;
+    }
   } catch {}
   return JSON.parse(JSON.stringify(DEFAULT_BANKS));
 }
@@ -393,6 +433,22 @@ function esc(s) { const d = document.createElement("div"); d.textContent = s; re
 function displayText(col, item) { return col === 0 ? item.display : item; }
 function promptText(col, item) { return col === 0 ? item.prompt : item; }
 
+// Final pick for a column. In the "Who" column, DUO_CHANCE of the time two
+// different people are combined into one entry marked duo: true.
+function pickFinal(col) {
+  const bank = banks[col];
+  if (col !== 0 || bank.length < 2 || Math.random() >= DUO_CHANCE) return randItem(bank);
+  const a = randItem(bank);
+  let b = randItem(bank);
+  while (b === a) b = randItem(bank);
+  const name = p => p.display.split(" (")[0];
+  return { display: name(a) + " & " + name(b), prompt: a.prompt + " and " + b.prompt, duo: true };
+}
+
+function showDuoBadge() {
+  document.getElementById("duoBadge").style.display = selected[0] && selected[0].duo ? "" : "none";
+}
+
 function spinOne(col) {
   if (spinning[col] || banks[col].length === 0) return;
   spinning[col] = true;
@@ -405,13 +461,14 @@ function spinOne(col) {
     wordEl.textContent = displayText(col, randItem(banks[col]));
     if (Date.now() - start >= duration) {
       clearInterval(iv);
-      const pick = randItem(banks[col]);
+      const pick = pickFinal(col);
       selected[col] = pick;
       wordEl.textContent = displayText(col, pick);
       wordEl.classList.remove("spinning");
       flashCol(col);
       spinning[col] = false;
       disableButtons();
+      showDuoBadge();
       updatePrompt();
     }
   }, 80);
@@ -431,13 +488,14 @@ function spinAll() {
       wordEl.textContent = displayText(col, randItem(banks[col]));
       if (Date.now() - start >= durations[col]) {
         clearInterval(iv);
-        const pick = randItem(banks[col]);
+        const pick = pickFinal(col);
         selected[col] = pick;
         wordEl.textContent = displayText(col, pick);
         wordEl.classList.remove("spinning");
         flashCol(col);
         spinning[col] = false;
         disableButtons();
+        showDuoBadge();
         if (col === NUM_COLS - 1) { updatePrompt(); addHistory(); }
       }
     }, 80);
@@ -461,7 +519,7 @@ function updatePrompt() {
   if (selected.some(s => !s)) { card.style.display = "none"; return; }
   card.style.display = "";
   document.getElementById("promptCombo").textContent = selected.map((s, i) => displayText(i, s)).join(" + ");
-  const en = promptText(0, selected[0]) + " is " + selected[1] + " " + selected[2] + ", " + selected[3] + ", humorous, highly detailed";
+  const en = promptText(0, selected[0]) + (selected[0].duo ? " are " : " is ") + selected[1] + " " + selected[2] + ", " + selected[3] + ", humorous, highly detailed";
   document.getElementById("promptEdit").value = en;
 }
 
@@ -494,6 +552,40 @@ async function generateWithGemini(prompt) {
   return "data:" + imgPart.inlineData.mimeType + ";base64," + imgPart.inlineData.data;
 }
 
+async function generateHeadline(prompt) {
+  const resp = await fetch("/api/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text:
+        "Write one short, funny British tabloid headline (max 20 words) about this scene: " + prompt +
+        ". Refer to people by first name only. Reply with the headline only, no quotes." }] }],
+      generationConfig: { responseModalities: ["TEXT"] }
+    })
+  });
+  if (!resp.ok) throw new Error("API error: " + resp.status);
+  const data = await resp.json();
+  const text = (data.candidates?.[0]?.content?.parts || []).map(p => p.text || "").join("").trim();
+  if (!text) throw new Error("No headline returned");
+  return text.replace(/^["']|["']$/g, "");
+}
+
+// Used when the headline request fails, so every image still gets one.
+function fallbackHeadline() {
+  const who = displayText(0, selected[0]).split(" (")[0];
+  return randItem([
+    who + " spotted " + selected[1] + " " + selected[2] + ". Colleagues 'not surprised'",
+    "Shock as " + who + " caught " + selected[1] + " " + selected[2],
+    "Witnesses describe " + who + " " + selected[1] + " " + selected[2] + " as 'deeply concerning'"
+  ]);
+}
+
+function showHeadline(text) {
+  const el = document.getElementById("headline");
+  el.textContent = text || "";
+  el.style.display = text ? "" : "none";
+}
+
 // Fallback used when Gemini is unavailable. Needs no API key, and serves
 // CORS headers, so the image can be read back as a data URL and stored in
 // history the same way a Gemini image is.
@@ -519,10 +611,12 @@ async function generateImage() {
   genBtn.disabled = true;
   area.classList.add("visible");
   img.style.display = "none";
+  showHeadline("");
   loading.style.display = "";
   loading.textContent = "\u23F3 Generating image, please wait...";
   const targetId = history.length > 0 ? history[0].id : null;
   const prompt = getEditedPrompt();
+  const headlinePromise = generateHeadline(prompt).catch(() => fallbackHeadline());
   try {
     let dataUrl;
     try {
@@ -531,13 +625,16 @@ async function generateImage() {
       loading.textContent = "\u23F3 Gemini unavailable (" + e.message + "). Falling back to Pollinations.ai...";
       dataUrl = await generateWithPollinations(prompt);
     }
+    const headline = await headlinePromise;
     img.src = dataUrl;
     loading.style.display = "none";
     img.style.display = "";
+    showHeadline(headline);
     if (targetId) {
       const entry = history.find(h => h.id === targetId);
       if (entry) {
         entry.hasImage = true;
+        entry.headline = headline;
         saveHistory();
         saveImage(targetId, dataUrl).catch(() => {});
         renderHistory();
@@ -584,7 +681,9 @@ async function restoreHistory(i) {
     document.getElementById("word-" + c).textContent = displayText(c, selected[c]);
     flashCol(c);
   }
+  showDuoBadge();
   updatePrompt();
+  showHeadline(h.headline);
   const area = document.getElementById("imgArea");
   const img = document.getElementById("genImg");
   const loading = document.getElementById("imgLoading");
